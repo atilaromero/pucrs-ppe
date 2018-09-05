@@ -36,7 +36,7 @@
 #include <chrono>
 
 //Matrix sizes
-#define MX	2000
+#define MX	1100
 
 //all the matrix
 long int **matrix1, **matrix2, **matrix;
