@@ -34,6 +34,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <ctime>
 
 //Matrix sizes
 #define MX	1100
@@ -87,10 +88,15 @@ int main(int argc, char const *argv[]){
 	//assigning fixed values to the matrix			
 	val();
 
+	clock_t begin = clock();
+
 	//matrix multiplication algorithm call
 	multiply();
 	
-	printf("SIZE= %d\n", MX);
+  	clock_t end = clock();
+  	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+
+	printf("threads: 0\tSIZE: %d\t time: %f\n", MX, elapsed_secs);
 	//printing the resultant matrix (you may comment when bigger sizes will be set-up)
 	//printMatrix(matrix);
 
