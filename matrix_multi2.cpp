@@ -106,7 +106,7 @@ int main(int argc, char const *argv[]){
 	std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
   	auto elapsed_secs = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
-	std::cout << "threads: " << threads << "\tSIZE: " << MX << "\ttime: "<< elapsed_secs/1000000.0;
+	std::cout << "threads: " << threads << "\tSIZE: " << MX << "\ttime: "<< elapsed_secs/1000000.0 << std::endl;
 	// printf("threads: %d\tSIZE: %d\t time: %f\n", threads, MX, elapsed_secs);
 	//printing the resultant matrix (you may comment when bigger sizes will be set-up)
 	//printMatrix(matrix);
