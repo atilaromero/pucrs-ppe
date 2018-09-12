@@ -38,9 +38,10 @@
 #include <tbb/task_scheduler_init.h>
 #include <tbb/parallel_for.h>
 #include <cstdlib>
+#include <chrono>
 
 //Matrix sizes
-#define MX	1100
+#define MX	2000
 
 //all the matrix
 long int **matrix1, **matrix2, **matrix;
@@ -97,15 +98,16 @@ int main(int argc, char const *argv[]){
 	val();
 	int threads = atoi(argv[1]);
 
-	clock_t begin = clock();
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
 	//matrix multiplication algorithm call
 	multiply(threads);
 	
-  	clock_t end = clock();
-  	double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+	std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
+  	auto elapsed_secs = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
-	printf("threads: %d\tSIZE: %d\t time: %f\n", threads, MX, elapsed_secs);
+	std::cout << "threads: " << threads << "\tSIZE: " << MX << "\ttime: "<< elapsed_secs/1000000.0;
+	// printf("threads: %d\tSIZE: %d\t time: %f\n", threads, MX, elapsed_secs);
 	//printing the resultant matrix (you may comment when bigger sizes will be set-up)
 	//printMatrix(matrix);
 
