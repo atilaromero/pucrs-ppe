@@ -39,6 +39,7 @@
 #include <chrono>
 #include <tbb/task_scheduler_init.h>
 #include <tbb/parallel_for.h>
+#include <tbb/pipeline.h>
 
 
 #define MX 10
@@ -76,21 +77,99 @@ void gen_input(){
 	B_out.close();
 }
 
-void val(long int **A, long int **B, long int **C, long int valA, long int valB, int threads){
-	tbb::task_scheduler_init init(threads);
-	tbb::parallel_for(0,MX,[A,B,C,valA,valB](int i){
-	// for(long int i=0; i<MX; i++){
+void val(long int **A, long int **B, long int **C, long int valA, long int valB){
+	// tbb::task_scheduler_init init(threads);
+	// tbb::parallel_for(0,MX,[A,B,C,valA,valB](int i){
+	for(long int i=0; i<MX; i++){
 		for(long int j=0; j<MX; j++){
 			A[i][j] = valA;
 			B[i][j] = valB;
 			C[i][j] = 0;
 		}
-	// }
-	});	
+	}
+	// });	
 }
 std::ofstream stream_out;
 std::ifstream stream_inA;
 std::ifstream stream_inB;
+
+struct tM {
+	long int **A;
+	long int **B;
+	long int **C;
+};
+
+class stage1: public tbb::filter {
+public:
+	stage1():tbb::filter(tbb::filter::serial) {
+	}
+	void* operator() (void*){
+		while(!stream_inB.eof()){
+			tM *tm = new tM;
+			long int **A = new long int*[MX];
+			long int **B = new long int*[MX];
+			long int **C = new long int*[MX];
+			
+			for (long int i=0; i < MX; i++){
+				A[i] = new long int[MX];
+				B[i] = new long int[MX];
+				C[i] = new long int[MX];
+			}
+			
+			long int valA; 
+			long int valB;
+			stream_inA >> valA;
+			stream_inB >> valB;
+
+			val(A,B,C,valA,valB);
+			
+			tm->A = A;
+			tm->B = B;
+			tm->C = C;
+			return tm;
+		}
+		return NULL;
+	}
+};
+
+class stage2: public tbb::filter {
+public:
+	stage2():tbb::filter(tbb::filter::parallel) {
+	}
+	void* operator() (void* item){
+		tM *tm = static_cast <tM*> (item);
+		tbb::parallel_for(0,MX,[tm](int i){		
+		// for(long int i=0; i<MX; i++){
+			for(long int j=0; j<MX; j++){
+				for(long int k=0; k<MX; k++){
+					tm->C[i][j] += (tm->A[i][k] * tm->B[k][j]);
+				}
+			}
+		// }
+		});
+		return tm;
+	}
+};
+class stage3: public tbb::filter {
+public:
+	stage3():tbb::filter(tbb::filter::serial) {
+	}
+	void* operator() (void* item){
+		tM *tm = static_cast <tM*> (item);		
+		for(long int i=0; i<MX; i++){
+			for(long int j=0; j<MX; j++){
+				stream_out << tm->C[i][j];
+				stream_out << " ";
+
+			}
+			stream_out << "\n";
+		}
+		stream_out << "----------------------------------\n";
+		delete tm;
+		return NULL;
+	}
+};
+
 void dp(int threads){
 	stream_inA.open("inputA.txt",std::ios::in);
 	if (stream_inA.fail()){
@@ -112,45 +191,18 @@ void dp(int threads){
 		stream_out.close();
 		return;
 	}
-	while(!stream_inB.eof()){
 
-		long int **A = new long int*[MX];
-	  	long int **B = new long int*[MX];
-	  	long int **C = new long int*[MX];
-	  	
-	  	for (long int i=0; i < MX; i++){
-	  		A[i] = new long int[MX];
-	  		B[i] = new long int[MX];
-	  		C[i] = new long int[MX];
-	  	}
-		
-		long int valA; 
-		long int valB;
-		stream_inA >> valA;
-		stream_inB >> valB;
+	tbb::task_scheduler_init init(threads);
+	tbb::pipeline pipeline;
+	stage1 ler;
+	pipeline.add_filter(ler);
+	stage2 calc;
+	pipeline.add_filter(calc);
+	stage3 escrever;
+	pipeline.add_filter(escrever);
+	pipeline.run(threads);
+	pipeline.clear();
 
-		val(A,B,C,valA,valB, threads);
-
-		for(long int i=0; i<MX; i++){
-			for(long int j=0; j<MX; j++){
-				for(long int k=0; k<MX; k++){
-					C[i][j] += (A[i][k] * B[k][j]);
-				}
-			}
-		}
-		delete A;
-		delete B;
-		for(long int i=0; i<MX; i++){
-			for(long int j=0; j<MX; j++){
-				stream_out << C[i][j];
-				stream_out << " ";
-
-			}
-			stream_out << "\n";
-		}
-		stream_out << "----------------------------------\n";
-		delete C;		
-	}
 	stream_inA.close();
 	stream_inB.close();
 	stream_out.close();
@@ -163,7 +215,7 @@ int main(int argc, char const *argv[]){
 	gen_input();
 
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-	dp();
+	dp(threads);
 	std::chrono::steady_clock::time_point end= std::chrono::steady_clock::now();
   	auto elapsed_secs = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 

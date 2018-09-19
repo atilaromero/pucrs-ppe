@@ -37,6 +37,8 @@
 #include <ctime>
 #include <tbb/task_scheduler_init.h>
 #include <tbb/parallel_for.h>
+#include <tbb/filter.h>
+#include <tbb/serial.h>
 #include <cstdlib>
 #include <chrono>
 
