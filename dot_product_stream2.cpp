@@ -37,6 +37,9 @@
 #include <fstream>
 #include <cmath>
 #include <chrono>
+#include <tbb/task_scheduler_init.h>
+#include <tbb/parallel_for.h>
+
 
 #define MX 10
 
@@ -73,19 +76,22 @@ void gen_input(){
 	B_out.close();
 }
 
-void val(long int **A, long int **B, long int **C, long int valA, long int valB){
-	for(long int i=0; i<MX; i++){
+void val(long int **A, long int **B, long int **C, long int valA, long int valB, int threads){
+	tbb::task_scheduler_init init(threads);
+	tbb::parallel_for(0,MX,[A,B,C,valA,valB](int i){
+	// for(long int i=0; i<MX; i++){
 		for(long int j=0; j<MX; j++){
 			A[i][j] = valA;
 			B[i][j] = valB;
 			C[i][j] = 0;
 		}
-	}	
+	// }
+	});	
 }
 std::ofstream stream_out;
 std::ifstream stream_inA;
 std::ifstream stream_inB;
-void dp(){
+void dp(int threads){
 	stream_inA.open("inputA.txt",std::ios::in);
 	if (stream_inA.fail()){
 		std::cerr << "Error in: " << "inputA.txt"  << std::endl;
@@ -123,7 +129,7 @@ void dp(){
 		stream_inA >> valA;
 		stream_inB >> valB;
 
-		val(A,B,C,valA,valB);
+		val(A,B,C,valA,valB, threads);
 
 		for(long int i=0; i<MX; i++){
 			for(long int j=0; j<MX; j++){
@@ -153,6 +159,7 @@ void dp(){
 
 
 int main(int argc, char const *argv[]){
+	int threads = atoi(argv[1]);
 	gen_input();
 
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
