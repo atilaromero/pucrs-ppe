@@ -112,7 +112,7 @@ class stage2: public tbb::filter {
 public:
     int dim, niter;
     double init_a, init_b, range, step;
-	stage2(int dim0, int niter0, double init_a0, double init_b0, double range0):tbb::filter(tbb::filter::serial) {
+	stage2(int dim0, int niter0, double init_a0, double init_b0, double range0):tbb::filter(tbb::filter::parallel) {
         dim = dim0;
         niter = niter0;
         init_a = init_a0;
