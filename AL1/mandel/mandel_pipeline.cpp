@@ -71,7 +71,7 @@ double diffmsec(struct timeval  a,  struct timeval  b) {
     return ((double)(sec*1000)+ (double)usec/1000.0);
 }
 
-struct Item {
+struct Stage1Result {
     int i;
     double im;
 };
@@ -92,7 +92,7 @@ public:
 	}
 	void* operator() (void*){
         if (i<dim) {
-            Item *it = new Item;
+            Stage1Result *it = new Stage1Result;
             it->i=i;
             it->im=init_b+(step*i);
 
@@ -101,6 +101,11 @@ public:
         }
 		return NULL;
 	}
+};
+
+struct Stage2Result {
+    int i;
+    unsigned char *M;
 };
 
 class stage2: public tbb::filter {
@@ -117,10 +122,11 @@ public:
 	}
 	void* operator() (void* item){
         double a,b,a2,b2,cr;
-		Item *it = static_cast <Item*> (item);
+		Stage1Result *it = static_cast <Stage1Result*> (item);
         int j,k;
-        unsigned char *M;
-        M = (unsigned char *) malloc(dim);
+        Stage2Result *result = new Stage2Result;
+        result->M = (unsigned char *) malloc(dim);
+        result->i = it->i;
 
         for (j=0; j<dim; j++)
         {
@@ -135,11 +141,32 @@ public:
                 b=2*a*b+it->im;
                 a=a2-b2+cr;
             }
-            M[j]= (unsigned char) 255-((k*255/niter));
+            result->M[j]= (unsigned char) 255-((k*255/niter));
         }
 
+        delete it;
+
+		return result;
+	}
+};
+
+class stage3: public tbb::filter {
+public:
+    int dim, niter;
+    double init_a, init_b, range, step;
+	stage3(int dim0, int niter0, double init_a0, double init_b0, double range0):tbb::filter(tbb::filter::serial) {
+        dim = dim0;
+        niter = niter0;
+        init_a = init_a0;
+        init_b = init_b0;
+        range = range0;
+        step = range/((double) dim);
+	}
+	void* operator() (void* item){
+		Stage2Result *it = static_cast <Stage2Result*> (item);
+
 #if !defined(NO_DISPLAY)
-        ShowLine(M,dim,it->i);
+        ShowLine(it->M,dim,it->i);
 #endif
 
         delete it;
@@ -188,6 +215,8 @@ int main(int argc, char **argv) {
         pipeline.add_filter(stg1);
         stage2 stg2(dim, niter, init_a, init_b, range);
         pipeline.add_filter(stg2);
+        stage3 stg3(dim, niter, init_a, init_b, range);
+        pipeline.add_filter(stg3);
         pipeline.run(threads);
         pipeline.clear();
 
