@@ -1,0 +1,10 @@
+Mandebroot set from (-2.125+I -1.5) to (0.875+I 1.5)
+resolution 1000000 pixel, Max. n. of iterations 1024
+Run [0] DONE, time= 23069.344000 (ms)
+Run [1] DONE, time= 22723.366000 (ms)
+Run [2] DONE, time= 23113.449000 (ms)
+Run [3] DONE, time= 22672.154000 (ms)
+Run [4] DONE, time= 22733.582000 (ms)
+Average on 5 experiments = 22862.379000 (ms) Std. Dev. 151.203105
+
+Press a key

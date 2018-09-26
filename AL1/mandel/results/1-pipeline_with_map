@@ -1,0 +1,12 @@
+#pipeline(seq,map(seq),seq) pattern implementation!!
+threads: 1
+Mandebroot set from (-2.125+I -1.5) to (0.875+I 1.5)
+resolution 1000000 pixel, Max. n. of iterations 1024
+Run [0] DONE, time= 22847.868000 (ms)
+Run [1] DONE, time= 22659.962000 (ms)
+Run [2] DONE, time= 22666.048000 (ms)
+Run [3] DONE, time= 22644.742000 (ms)
+Run [4] DONE, time= 22620.818000 (ms)
+Average on 5 experiments = 22687.887600 (ms) Std. Dev. 150.624990
+
+Press a key

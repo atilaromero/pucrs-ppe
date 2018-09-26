@@ -1,0 +1,12 @@
+#map(seq) pattern implementation!!
+threads: 6
+Mandebroot set from (-2.125+I -1.5) to (0.875+I 1.5)
+resolution 1000000 pixel, Max. n. of iterations 1024
+Run [0] DONE, time= 7276.431000 (ms)
+Run [1] DONE, time= 6586.466000 (ms)
+Run [2] DONE, time= 6593.246000 (ms)
+Run [3] DONE, time= 6607.439000 (ms)
+Run [4] DONE, time= 6590.884000 (ms)
+Average on 5 experiments = 6730.893200 (ms) Std. Dev. 82.042021
+
+Press a key
