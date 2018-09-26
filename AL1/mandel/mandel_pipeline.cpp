@@ -185,6 +185,11 @@ int main(int argc, char **argv) {
     double avg=0, var, * runs;
 
     int threads = 4;
+    char *threads_env = getenv("THREADS");
+    if (threads_env != NULL) {
+        threads = atoi(threads_env);
+    }
+    printf("threads: %d\n", threads);
 
     if (argc<3) {
         printf("Usage: seq size niterations\n\n\n");
