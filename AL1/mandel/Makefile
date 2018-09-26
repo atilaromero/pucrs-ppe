@@ -45,19 +45,19 @@ seq: mandel.cpp libmarX2.a
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o seq.o mandel.cpp $(LIBS)
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS)  -o seq seq.o $(LIBS)
 
-pipeline:
+pipeline: mandel_pipeline.cpp
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o pipeline.o mandel_pipeline.cpp $(LIBS) -ltbb
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o pipeline pipeline.o $(LIBS) -ltbb
-map:
+map: mandel_map.cpp
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o map.o mandel_map.cpp $(LIBS) -ltbb
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o map map.o $(LIBS) -ltbb
-pipeline_with_farm:
+pipeline_with_farm: mandel_pipeline_with_farm.cpp
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o pipeline_with_farm.o mandel_pipeline_with_farm.cpp $(LIBS) -ltbb
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o pipeline_with_farm pipeline_with_farm.o $(LIBS) -ltbb
-pipeline_with_map:
+pipeline_with_map: mandel_pipeline_with_map.cpp
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o pipeline_with_map.o mandel_pipeline_with_map.cpp $(LIBS) -ltbb
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o pipeline_with_map pipeline_with_map.o $(LIBS) -ltbb
-pipeline_with_farm_map:
+pipeline_with_farm_map: mandel_pipeline_with_farm_map.cpp
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -c -o pipeline_with_farm_map.o mandel_pipeline_with_farm_map.cpp $(LIBS) -ltbb
 	$(CXX)  $(CXXFLAGS) $(OPTIMIZE_FLAGS)  $(CFLAGS) $(INCLUDES) $(LDFLAGS) -o pipeline_with_farm_map pipeline_with_farm_map.o $(LIBS) -ltbb
 

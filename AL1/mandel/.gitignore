@@ -1,0 +1,15 @@
+libmarX2.a
+map
+map.o
+marX2.o
+pipeline
+pipeline.o
+pipeline_with_farm
+pipeline_with_farm.o
+pipeline_with_farm_map
+pipeline_with_farm_map.o
+pipeline_with_map
+pipeline_with_map.o
+seq
+seq.o
+
