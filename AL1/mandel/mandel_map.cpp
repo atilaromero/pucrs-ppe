@@ -53,6 +53,8 @@ Modified by:
 #include <iostream>
 #include <chrono>
 
+#include <tbb/task_scheduler_init.h>
+#include <tbb/parallel_for.h>
 
 #define DIM 800
 #define ITERATION 1024
@@ -73,15 +75,18 @@ double diffmsec(struct timeval  a,  struct timeval  b) {
 int main(int argc, char **argv) {
     std::cout << "#map(seq) pattern implementation!!" << std::endl;
     double init_a=-2.125,init_b=-1.5,range=3.0;
-    int j,i,k;
-    double step,im,a,b,a2,b2,cr;
-    unsigned char *M;
+    double step;
     int dim = DIM, niter = ITERATION;
     // stats
     struct timeval t1,t2;
     int r,retries=1;
     double avg=0, var, * runs;
 
+    int threads = 1;
+    char *threads_env = getenv("THREADS");
+    if (threads_env != NULL) {
+        threads = atoi(threads_env);
+    }
 
     if (argc<3) {
         printf("Usage: seq size niterations\n\n\n");
@@ -93,8 +98,6 @@ int main(int argc, char **argv) {
         retries = atoi(argv[3]);
     }
     runs = (double *) malloc(retries*sizeof(double));
-
-    M = (unsigned char *) malloc(dim);
 
     printf("Mandebroot set from (%g+I %g) to (%g+I %g)\n",
            init_a,init_b,init_a+range,init_b+range);
@@ -111,7 +114,13 @@ int main(int argc, char **argv) {
         // Start time
         gettimeofday(&t1,NULL);
 
-        for(i=0; i<dim; i++) {
+        tbb::task_scheduler_init init(threads);
+        // for(i=0; i<dim; i++) 
+        tbb::parallel_for(0,dim,[init_a, init_b,dim, step, niter](int i){
+            double im,a,b,a2,b2,cr;
+            int j, k;
+            unsigned char *M;
+            M = (unsigned char *) malloc(dim);
             im=init_b+(step*i);
             for (j=0; j<dim; j++)
             {
@@ -131,7 +140,10 @@ int main(int argc, char **argv) {
 #if !defined(NO_DISPLAY)
             ShowLine(M,dim,i);
 #endif
-        }
+            delete M;
+        // }
+        });
+
         // Stop time
         gettimeofday(&t2,NULL);
 
