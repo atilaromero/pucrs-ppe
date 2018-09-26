@@ -53,6 +53,9 @@ Modified by:
 #include <iostream>
 #include <chrono>
 
+#include <tbb/task_scheduler_init.h>
+#include <tbb/parallel_for.h>
+#include <tbb/pipeline.h>
 
 #define DIM 800
 #define ITERATION 1024
@@ -68,20 +71,131 @@ double diffmsec(struct timeval  a,  struct timeval  b) {
     return ((double)(sec*1000)+ (double)usec/1000.0);
 }
 
+struct Stage1Result {
+    int i;
+    double im;
+};
 
+class stage1: public tbb::filter {
+public:
+    int i;
+    int dim, niter;
+    double init_a, init_b, range, step;
+	stage1(int dim0, int niter0, double init_a0, double init_b0, double range0):tbb::filter(tbb::filter::serial) {
+        dim = dim0;
+        niter = niter0;
+        init_a = init_a0;
+        init_b = init_b0;
+        range = range0;
+        step = range/((double) dim);
+        i=0;
+	}
+	void* operator() (void*){
+        if (i<dim) {
+            Stage1Result *it = new Stage1Result;
+            it->i=i;
+            it->im=init_b+(step*i);
+
+            i++;
+            return it;
+        }
+		return NULL;
+	}
+};
+
+struct Stage2Result {
+    int i;
+    unsigned char *M;
+};
+
+class stage2: public tbb::filter {
+public:
+    int dim, niter;
+    double init_a, init_b, range, step;
+	stage2(int dim0, int niter0, double init_a0, double init_b0, double range0):tbb::filter(tbb::filter::parallel) {
+        dim = dim0;
+        niter = niter0;
+        init_a = init_a0;
+        init_b = init_b0;
+        range = range0;
+        step = range/((double) dim);
+	}
+	void* operator() (void* item){
+		Stage1Result *it = static_cast <Stage1Result*> (item);
+        Stage2Result *result = new Stage2Result;
+        result->M = (unsigned char *) malloc(dim);
+        result->i = it->i;
+
+        double init_a0, step0;
+        int niter0;
+        init_a0 = init_a;
+        step0 = step;
+        niter0 = niter;
+
+        // for (j=0; j<dim; j++) {
+        tbb::parallel_for(0,dim,[init_a0, step0, niter0, it, result](int j){
+            double a,b,a2,b2,cr;
+            int k;
+            a=cr=init_a0+step0*j;
+            b=it->im;
+            k=0;
+            for (k=0; k<niter0; k++)
+            {
+                a2=a*a;
+                b2=b*b;
+                if ((a2+b2)>4.0) break;
+                b=2*a*b+it->im;
+                a=a2-b2+cr;
+            }
+            result->M[j]= (unsigned char) 255-((k*255/niter0));
+        // }
+        });
+        delete it;
+
+		return result;
+	}
+};
+
+class stage3: public tbb::filter {
+public:
+    int dim, niter;
+    double init_a, init_b, range, step;
+	stage3(int dim0, int niter0, double init_a0, double init_b0, double range0):tbb::filter(tbb::filter::serial) {
+        dim = dim0;
+        niter = niter0;
+        init_a = init_a0;
+        init_b = init_b0;
+        range = range0;
+        step = range/((double) dim);
+	}
+	void* operator() (void* item){
+		Stage2Result *it = static_cast <Stage2Result*> (item);
+
+#if !defined(NO_DISPLAY)
+        ShowLine(it->M,dim,it->i);
+#endif
+
+        delete it;
+
+		return NULL;
+	}
+};
 
 int main(int argc, char **argv) {
     std::cout << "#pipeline(seq,farm(map(seq)),seq) pattern implementation!!" << std::endl;
     double init_a=-2.125,init_b=-1.5,range=3.0;
-    int j,i,k;
-    double step,im,a,b,a2,b2,cr;
-    unsigned char *M;
     int dim = DIM, niter = ITERATION;
     // stats
     struct timeval t1,t2;
     int r,retries=1;
     double avg=0, var, * runs;
 
+    int threads = 4;
+    char *threads_env = getenv("THREADS");
+    if (threads_env != NULL) {
+        threads = atoi(threads_env);
+    }
+    printf("threads: %d\n", threads);
 
     if (argc<3) {
         printf("Usage: seq size niterations\n\n\n");
@@ -89,18 +203,13 @@ int main(int argc, char **argv) {
     else {
         dim = atoi(argv[1]);
         niter = atoi(argv[2]);
-        step = range/((double) dim);
         retries = atoi(argv[3]);
     }
     runs = (double *) malloc(retries*sizeof(double));
 
-    M = (unsigned char *) malloc(dim);
-
     printf("Mandebroot set from (%g+I %g) to (%g+I %g)\n",
            init_a,init_b,init_a+range,init_b+range);
     printf("resolution %d pixel, Max. n. of iterations %d\n",dim*dim,ITERATION);
-
-    step = range/((double) dim);
 
 #if !defined(NO_DISPLAY)
     SetupXWindows(dim,dim,1,NULL,"Sequential Mandelbroot");
@@ -111,27 +220,17 @@ int main(int argc, char **argv) {
         // Start time
         gettimeofday(&t1,NULL);
 
-        for(i=0; i<dim; i++) {
-            im=init_b+(step*i);
-            for (j=0; j<dim; j++)
-            {
-                a=cr=init_a+step*j;
-                b=im;
-                k=0;
-                for (k=0; k<niter; k++)
-                {
-                    a2=a*a;
-                    b2=b*b;
-                    if ((a2+b2)>4.0) break;
-                    b=2*a*b+im;
-                    a=a2-b2+cr;
-                }
-                M[j]= (unsigned char) 255-((k*255/niter));
-            }
-#if !defined(NO_DISPLAY)
-            ShowLine(M,dim,i);
-#endif
-        }
+        tbb::task_scheduler_init init(threads);
+        tbb::pipeline pipeline;
+        stage1 stg1(dim, niter, init_a, init_b, range);
+        pipeline.add_filter(stg1);
+        stage2 stg2(dim, niter, init_a, init_b, range);
+        pipeline.add_filter(stg2);
+        stage3 stg3(dim, niter, init_a, init_b, range);
+        pipeline.add_filter(stg3);
+        pipeline.run(threads);
+        pipeline.clear();
+
         // Stop time
         gettimeofday(&t2,NULL);
 
