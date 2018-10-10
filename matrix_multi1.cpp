@@ -37,7 +37,7 @@
 #include <ctime>
 
 //Matrix sizes
-#define MX	2000
+int MX	= 1000;
 
 //all the matrix
 long int **matrix1, **matrix2, **matrix;
@@ -74,6 +74,11 @@ void multiply(){
 }
 //main function
 int main(int argc, char const *argv[]){
+
+    char *MX_env = getenv("MX");
+    if (MX_env != NULL) {
+        MX = atoi(MX_env);
+    }
 
 	matrix = new long int*[MX];  
 	matrix1 = new long int*[MX];

@@ -35,13 +35,8 @@
 #include <iostream>
 #include <chrono>
 #include <ctime>
-#include <tbb/task_scheduler_init.h>
-#include <tbb/parallel_for.h>
-// #include <tbb/filter.h>
-// #include <tbb/serial.h>
-#include <cstdlib>
-#include <chrono>
 #include <thread>
+#include <vector>
 
 //Matrix sizes
 int MX	= 1000;
@@ -70,19 +65,26 @@ void printMatrix(long int **matrix){
 	printf("\n");				
 }
 //matrix multiplication algorithm
-void multiply(int threads){
-	tbb::task_scheduler_init init(threads);
-	// for(i=0; i<MX; i++){
-	tbb::parallel_for(0,MX,[](int i){
-		for(long int j=0; j<MX; j++){
-			for(long int k=0; k<MX; k++){
-			// tbb::parallel_for(0,MX,[i,j](int k){
-				matrix[i][j] += (matrix1[i][k] * matrix2[k][j]);
-			// });
-			}
-		}
-	});
-	// }	
+void multiply(unsigned int threads){
+	std::vector<std::thread> th;
+	for (int t = 0; t<threads; t++){
+		th.push_back(std::thread ([t,threads]{
+			for(long int i=0; i<MX; i++){
+				if (i%threads != t) {
+					continue;
+				}
+				// std::cout << t << "\t" << i << "\t" << i%n << std::endl;
+				for(long int j=0; j<MX; j++){
+					for(long int k=0; k<MX; k++){
+						matrix[i][j] += (matrix1[i][k] * matrix2[k][j]);
+					}
+				}
+			}	
+		}));
+	}
+	for (int t = 0; t<threads; t++){
+		th[t].join();
+	}
 }
 //main function
 int main(int argc, char const *argv[]){
@@ -91,6 +93,10 @@ int main(int argc, char const *argv[]){
     if (MX_env != NULL) {
         MX = atoi(MX_env);
     }
+	unsigned int threads = std::thread::hardware_concurrency();
+	if (argc >1 && argv != NULL){
+		threads = atoi(argv[1]);
+	}
 
 	matrix = new long int*[MX];  
 	matrix1 = new long int*[MX];
@@ -104,10 +110,6 @@ int main(int argc, char const *argv[]){
 	
 	//assigning fixed values to the matrix			
 	val();
-	unsigned int threads = std::thread::hardware_concurrency();
-	if (argc >1 && argv != NULL){
-		threads = atoi(argv[1]);
-	}
 
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
@@ -118,7 +120,6 @@ int main(int argc, char const *argv[]){
   	auto elapsed_secs = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
 
 	std::cout << "threads: " << threads << "\tSIZE: " << MX << "\ttime: "<< elapsed_secs/1000000.0 << std::endl;
-	// printf("threads: %d\tSIZE: %d\t time: %f\n", threads, MX, elapsed_secs);
 	//printing the resultant matrix (you may comment when bigger sizes will be set-up)
 	//printMatrix(matrix);
 
